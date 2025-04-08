@@ -1,5 +1,7 @@
-absl-py==0.8.1
-numpy==1.16.0
-tensorflow==1.14.0
-torch==1.3.0+cpu
-torchvision==0.4.1+cpu
+# absl-py==0.8.1
+# numpy==1.16.0
+# tensorflow==1.14.0
+# torch==1.3.0
+# torchvision==0.4.1
+torch==1.13.1+cu117
+torchvision==0.14.1+cu117
