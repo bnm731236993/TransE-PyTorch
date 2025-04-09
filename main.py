@@ -50,23 +50,35 @@ def test(model: torch.nn.Module, data_generator: torch_data.DataLoader, entities
     hits_at_10 = 0.0
     mrr = 0.0
 
+    # 所有的头实体ID，(n_e)
     entity_ids = torch.arange(end=entities_count, device=device).unsqueeze(0)
+
+    # 批遍历测试集，返回的是(h,r,t)的元组，而不是张量
     for head, relation, tail in data_generator:
-        # 批遍历测试集
+        # 批大小
         current_batch_size = head.size()[0]
 
         head, relation, tail = head.to(
             device), relation.to(device), tail.to(device)
+
+        # (n_e)->(b,n_e)
         all_entities = entity_ids.repeat(current_batch_size, 1)
+
+        # (b)->(b,1)->(b,n_e)
         heads = head.reshape(-1, 1).repeat(1, all_entities.size()[1])
+        # (b)->(b,1)->(b,n_e)
         relations = relation.reshape(-1, 1).repeat(1, all_entities.size()[1])
+        # (b)->(b,1)->(b,n_e)
         tails = tail.reshape(-1, 1).repeat(1, all_entities.size()[1])
 
         # Check all possible tails
+        # (b,n_e,3)->(b*n_e,3)
         triplets = torch.stack(
             (heads, relations, all_entities), dim=2).reshape(-1, 3)
+        # (b*n_e)->(b,n_e)
         tails_predictions = model.predict(
             triplets).reshape(current_batch_size, -1)
+
         # Check all possible heads
         triplets = torch.stack(
             (all_entities, relations, tails), dim=2).reshape(-1, 3)
@@ -158,31 +170,37 @@ def main(_):
     # print(model)
 
     # Training loop
+    # 遍历批
     for epoch_id in range(start_epoch_id, epochs + 1):
         print("Starting epoch: ", epoch_id)
         loss_impacting_samples_count = 0
         samples_count = 0
         model.train()
 
-        # 三元组
+        # 遍历批三元组，此处返回的批是元祖，需要转化为张量
         for local_heads, local_relations, local_tails in train_generator:
             # 设备
             local_heads, local_relations, local_tails = (local_heads.to(device), local_relations.to(device),
                                                          local_tails.to(device))
-
+            # 转化为张量 (b,3)
             positive_triples = torch.stack(
                 (local_heads, local_relations, local_tails), dim=1)
 
+            # 生成负三元组
             # Preparing negatives.
             # Generate binary tensor to replace either head or tail. 1 means replace head, 0 means replace tail.
+            # 0-1随机数
             head_or_tail = torch.randint(
                 high=2, size=local_heads.size(), device=device)
+            # 生成随机实体
             random_entities = torch.randint(
                 high=len(entity2id), size=local_heads.size(), device=device)
+            # 替换头实体或尾实体
             broken_heads = torch.where(
                 head_or_tail == 1, random_entities, local_heads)
             broken_tails = torch.where(
                 head_or_tail == 0, random_entities, local_tails)
+            # 批负三元组
             negative_triples = torch.stack(
                 (broken_heads, local_relations, broken_tails), dim=1)
 

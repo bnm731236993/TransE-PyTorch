@@ -58,13 +58,16 @@ class TransE(nn.Module):
         self.entities_emb.weight.data[:-1, :].div_(
             self.entities_emb.weight.data[:-1, :].norm(p=2, dim=1, keepdim=True))
 
-        assert positive_triplets.size()[1] == 3
         # 计算三元组的距离
+        # 正三元组
+        assert positive_triplets.size()[1] == 3
         positive_distances = self._distance(positive_triplets)
 
+        # 负三元组
         assert negative_triplets.size()[1] == 3
         negative_distances = self._distance(negative_triplets)
 
+        # 计算损失
         return self.loss(positive_distances, negative_distances), positive_distances, negative_distances
 
     def predict(self, triplets: torch.LongTensor):
