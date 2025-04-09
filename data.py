@@ -8,17 +8,23 @@ Mapping = Dict[str, int]
 def create_mappings(dataset_path: str) -> Tuple[Mapping, Mapping]:
     """Creates separate mappings to indices for entities and relations."""
     # counters to have entities/relations sorted from most frequent
+    # 计算三元组的数量
     entity_counter = Counter()
     relation_counter = Counter()
     with open(dataset_path, "r") as f:
         for line in f:
             # -1 to remove newline sign
             head, relation, tail = line[:-1].split("\t")
+            # 统计 (头节点、尾节点) 的数量
             entity_counter.update([head, tail])
+            # 统计各类型关系的数量
             relation_counter.update([relation])
+
     entity2id = {}
     relation2id = {}
+    # 从高频到低频的顺序进行索引
     for idx, (mid, _) in enumerate(entity_counter.most_common()):
+        # 将频次顺序作为ID
         entity2id[mid] = idx
     for idx, (relation, _) in enumerate(relation_counter.most_common()):
         relation2id[relation] = idx
